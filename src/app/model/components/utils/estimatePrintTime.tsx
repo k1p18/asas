@@ -13,7 +13,6 @@ export const estimatePrintTime = (
     { axis: "z", value: size.z },
   ];
 
-  // Sort descending by size value
   dimensions.sort((a, b) => b.value - a.value);
 
   // Largest dimension is height
@@ -35,7 +34,7 @@ export const estimatePrintTime = (
   const depth = axisMap[depthAxis];
 
   const layerHeight = 0.2;
-  const printSpeed = 40;
+  const printSpeed = 50;
   const perimeterSpeed = 20;
   const travelSpeed = 100;
   // const infill = 0.2;

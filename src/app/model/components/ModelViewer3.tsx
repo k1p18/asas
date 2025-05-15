@@ -8,10 +8,18 @@ import * as THREE from "three";
 import { loadModel } from "./utils/loadAndPrepareModel";
 import { calculateVolume } from "./utils/calculateVolume";
 import { estimatePrintTime, formatTime } from "./utils/estimatePrintTime";
+import { estimateWeight } from "./utils/estimateWeight";
 
 interface ModelViewerProps {
   file: File | null;
 }
+
+const materialOptions = [
+  { name: "PLA", value: 1.24 },
+  { name: "ABS", value: 1.04 },
+  { name: "PETG", value: 1.27 },
+  { name: "TPU", value: 1.21 },
+];
 
 function Model({
   file,
@@ -19,12 +27,16 @@ function Model({
   setAnalysisProgress,
   modelRef,
   infill,
+  density,
+  selectedMaterialName,
 }: {
   file: File;
   onMetricsReady: (metrics: any) => void;
   setAnalysisProgress: (progress: number) => void;
   modelRef: React.MutableRefObject<THREE.Object3D | null>;
   infill: number;
+  density: number;
+  selectedMaterialName: string;
 }) {
   const { scene } = useThree();
 
@@ -59,7 +71,7 @@ function Model({
 
       // Uniform scaling
       const maxDimension = Math.max(size.x, size.y, size.z);
-      const maxAllowed = 50;
+      const maxAllowed = 25;
       const scale = maxDimension > maxAllowed ? maxAllowed / maxDimension : 1;
       object.scale.setScalar(scale);
 
@@ -92,7 +104,7 @@ function Model({
             const volume = calculateVolume(object);
             const printTime = estimatePrintTime(object, infill);
             // const infill = 0.2;
-            const density = 1.24;
+            // const density = 1.24;
 
             const filamentLength = (volume * 1000 * infill) / (0.4 * 0.2);
             const filamentCost = (filamentLength / 1000) * 2;
@@ -100,6 +112,7 @@ function Model({
             const electricityCost = (120 / 1000) * (printTime / 3600) * 10;
             const marketCost = volume * 2;
             const baseCost = 10;
+            const laborCost = 30;
             const riskFactor = 5;
             const materialCost = ((volume * density * infill) / 1000) * 1500;
             const totalCost =
@@ -108,20 +121,24 @@ function Model({
               machineTimeCost +
               riskFactor +
               electricityCost +
-              filamentCost +
+              laborCost +
               marketCost;
             const gstAmount = (totalCost * 18) / 100;
             const totalCostWithGst = totalCost + gstAmount;
-            const adjustedWeight = volume * infill * density;
+            const weight = estimateWeight({
+              volumeCm3: volume,
+              size,
+              infill,
+              density,
+            });
 
             onMetricsReady({
               volume: volume.toFixed(2) + " cm³",
-              dimensions: `${((size.x * scale) / 10).toFixed(2)} × ${(
-                (size.y * scale) /
-                10
-              ).toFixed(2)} × ${((size.z * scale) / 10).toFixed(2)} cm`,
+              dimensions: `${(size.x / 1).toFixed(2)} × ${(size.y / 1).toFixed(
+                2
+              )} × ${(size.z / 1).toFixed(2)} cm`,
               printTime: formatTime(printTime),
-              weight: adjustedWeight.toFixed(2) + " g",
+              weight: weight.toFixed(2) + " g",
               cost: `₹${totalCost.toFixed(2)}`,
               gst: `₹${gstAmount.toFixed(2)}`,
               totalCostWithGst: `₹${totalCostWithGst.toFixed(2)}`,
@@ -136,7 +153,7 @@ function Model({
     }
 
     return () => clearInterval(interval);
-  }, [file, infill]);
+  }, [file, infill, density]);
 
   return null;
 }
@@ -147,6 +164,8 @@ const ModelViewer3: React.FC<ModelViewerProps> = ({ file }) => {
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [showInfillOptions, setShowInfillOptions] = useState(false);
   const modelRef = useRef<THREE.Object3D | null>(null);
+  const [showMaterialOptions, setShowMaterialOptions] = useState(false);
+  const [selectedMaterial, setSelectedMaterial] = useState(materialOptions[0]);
 
   return (
     // <section className="w-full min-h-screen px-4 py-8 bg-gray-100 flex flex-col items-center justify-center gap-6">
@@ -296,6 +315,8 @@ const ModelViewer3: React.FC<ModelViewerProps> = ({ file }) => {
                     setAnalysisProgress={setAnalysisProgress}
                     modelRef={modelRef}
                     infill={infill}
+                    density={selectedMaterial.value}
+                    selectedMaterialName={selectedMaterial.name}
                   />
                 )}
                 <OrbitControls
@@ -334,6 +355,9 @@ const ModelViewer3: React.FC<ModelViewerProps> = ({ file }) => {
                     <strong>Dimensions:</strong> {metrics.dimensions}
                   </li>
                   <li>
+                    <strong>Weight:</strong> {metrics.weight}
+                  </li>
+                  <li>
                     <strong>Print Time:</strong> {metrics.printTime}
                   </li>
                   <li>
@@ -358,45 +382,88 @@ const ModelViewer3: React.FC<ModelViewerProps> = ({ file }) => {
           </div>
 
           <div className="hidden lg:block border-l border-gray-300" />
+          <div>
+            {/* Infill Accordion */}
+            <div className=" w-full lg:w-1/3 p-4 flex flex-col">
+              <button
+                className="w-fit text-left font-semibold text-gray-800 bg-white p-4"
+                onClick={() => setShowInfillOptions((prev) => !prev)}
+              >
+                Infill ▼
+              </button>
 
-          {/* Infill Accordion */}
-          <div className=" w-full lg:w-1/3 p-4 flex flex-col">
-            <button
-              className="w-fit text-left font-semibold text-gray-800 bg-white p-4"
-              onClick={() => setShowInfillOptions((prev) => !prev)}
-            >
-              Infill ▼
-            </button>
-
-            <div
-              className={`overflow-hidden transition-all duration-300 ease-in-out
+              <div
+                className={`overflow-hidden transition-all duration-300 ease-in-out
       ${
         showInfillOptions
-          ? "max-h-80 opacity-100  bg-white w-20.5 it p-2"
+          ? "max-h-80 opacity-100  bg-white w-20 it p-2"
           : "max-h-0 opacity-0 mt-0"
       }`}
-            >
-              {[...Array(10)].map((_, i) => {
-                const percent = (i + 1) * 10;
-                return (
-                  <div key={percent}>
+              >
+                {[...Array(10)].map((_, i) => {
+                  const percent = (i + 1) * 10;
+                  return (
+                    <div key={percent}>
+                      <label className="inline-flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={Math.round(infill * 100) === percent}
+                          onChange={() => {
+                            setInfill(percent / 100);
+                            setAnalysisProgress(0);
+                            setMetrics(null);
+                            setShowInfillOptions(false);
+                          }}
+                          className="form-checkbox text-blue-600"
+                        />
+                        <span className="text-sm text-gray-800">
+                          {percent}%
+                        </span>
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="w-full lg:w-1/3 p-4 flex flex-col">
+              <button
+                className="w-fit text-left font-semibold text-gray-800 bg-white p-4"
+                onClick={() => setShowMaterialOptions((prev) => !prev)}
+              >
+                Material: {selectedMaterial.name} ▼
+              </button>
+
+              <div
+                className={`overflow-hidden transition-all duration-300 ease-in-out
+      ${
+        showMaterialOptions
+          ? "max-h-80 opacity-100 bg-white w-32 p-2"
+          : "max-h-0 opacity-0"
+      }`}
+              >
+                {materialOptions.map((material) => (
+                  <div key={material.name}>
                     <label className="inline-flex items-center space-x-2 cursor-pointer">
                       <input
-                        type="checkbox"
-                        checked={Math.round(infill * 100) === percent}
+                        type="radio"
+                        name="material"
+                        checked={selectedMaterial.name === material.name}
                         onChange={() => {
-                          setInfill(percent / 100);
+                          setSelectedMaterial(material);
                           setAnalysisProgress(0);
                           setMetrics(null);
-                          setShowInfillOptions(false);
+                          setShowMaterialOptions(false);
                         }}
                         className="form-checkbox text-blue-600"
                       />
-                      <span className="text-sm text-gray-800">{percent}%</span>
+                      <span className="text-sm text-gray-800">
+                        {material.name}
+                      </span>
                     </label>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
           </div>
         </div>
