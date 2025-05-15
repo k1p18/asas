@@ -297,6 +297,7 @@ function Model({
   useEffect(() => {
     const ext = file.name.split(".").pop()?.toLowerCase();
     const reader = new FileReader();
+    
 
     reader.onload = async (e) => {
       const contents = e.target?.result;
@@ -475,9 +476,9 @@ const ModelViewer1: React.FC<ModelViewerProps> = ({ file }) => {
               xLength={200}
               yLength={120}
               zLength={120}
-              lineWidth={0}
+              lineWidth={12}
             />
-            <primitive object={new THREE.GridHelper(200, 20)} />
+            <primitive object={new THREE.GridHelper(400, 25)} />
             <Suspense fallback={<Html center>Loading...</Html>}>
               {file && (
                 <Model

@@ -3,6 +3,7 @@
 import React, { useRef, useState } from "react";
 import ModelViewer from "./ModelViewer";
 import ModelViewer1 from "./ModelViewer1";
+import ModelViewer3 from "./ModelViewer3";
 
 const Uploader = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -42,7 +43,8 @@ const Uploader = () => {
     <section className="bg-black flex items-center justify-center min-h-screen">
       {isUploaded && selectedFile ? (
         // <ModelViewer file={selectedFile} />
-        <ModelViewer1 file={selectedFile} />
+        // <ModelViewer1 file={selectedFile} />
+        <ModelViewer3 file={selectedFile} />
       ) : (
         <div className="bg-white p-8 rounded-xl shadow-xl max-w-md w-full">
           <h2 className="text-2xl font-semibold text-gray-800 text-center mb-6">
