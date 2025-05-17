@@ -21,6 +21,14 @@ const materialOptions = [
   { name: "TPU", value: 1.21 },
 ];
 
+const colorOptions = [
+  { name: "Red", value: "#ff0000" },
+  { name: "White", value: "#ffffff" },
+  { name: "Black", value: "#000000" },
+  { name: "Green", value: "#00ff00" },
+  { name: "Blue", value: "#0000ff" },
+];
+
 function Model({
   file,
   onMetricsReady,
@@ -29,6 +37,7 @@ function Model({
   infill,
   density,
   selectedMaterialName,
+  selectedColor,
 }: {
   file: File;
   onMetricsReady: (metrics: any) => void;
@@ -37,6 +46,7 @@ function Model({
   infill: number;
   density: number;
   selectedMaterialName: string;
+  selectedColor: string;
 }) {
   const { scene } = useThree();
 
@@ -84,6 +94,18 @@ function Model({
 
       // const axesHelper = new THREE.AxesHelper(25);
       // object.add(axesHelper);
+
+      // for color
+      const colorMaterial = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(selectedColor),
+      });
+
+      object.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const mesh = child as THREE.Mesh;
+          mesh.material = colorMaterial;
+        }
+      });
 
       // // Remove previous model safely
       scene.children = scene.children.filter(
@@ -153,7 +175,7 @@ function Model({
     }
 
     return () => clearInterval(interval);
-  }, [file, infill, density]);
+  }, [file, infill, density, selectedColor]);
 
   return null;
 }
@@ -163,9 +185,11 @@ const ModelViewer3: React.FC<ModelViewerProps> = ({ file }) => {
   const [infill, setInfill] = useState(0.2); // Default 20%
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [showInfillOptions, setShowInfillOptions] = useState(false);
-  const modelRef = useRef<THREE.Object3D | null>(null);
   const [showMaterialOptions, setShowMaterialOptions] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(materialOptions[0]);
+  const [selectedColor, setSelectedColor] = useState("purple");
+  const [showColorOptions, setShowColorOptions] = useState(false);
+  const modelRef = useRef<THREE.Object3D | null>(null);
 
   return (
     // <section className="w-full min-h-screen px-4 py-8 bg-gray-100 flex flex-col items-center justify-center gap-6">
@@ -295,10 +319,10 @@ const ModelViewer3: React.FC<ModelViewerProps> = ({ file }) => {
     // </section>
 
     <>
-      <section className="w-full min-h-screen px-4 py-8 bg-gray-100 flex flex-col items-center justify-center gap-6">
-        <div className="w-full max-w-5xl flex flex-col lg:flex-row gap-6">
-          {/* Main content: Model viewer + metrics */}
-          <div className="flex-1 flex flex-col gap-6">
+      {/* <section className="w-full min-h-screen px-4 py-8 bg-gray-100 flex flex-col items-center justify-center gap-6">
+        {/* <div className="w-full max-w-5xl flex flex-col lg:flex-row gap-6"> */}
+      {/* Main content: Model viewer + metrics */}
+      {/* <div className="flex-1 flex flex-col gap-6">
             <div className="w-full h-[500px] bg-white rounded-xl shadow">
               <Canvas camera={{ position: [100, 100, 100], fov: 45 }}>
                 <ambientLight intensity={1.2} />
@@ -317,6 +341,7 @@ const ModelViewer3: React.FC<ModelViewerProps> = ({ file }) => {
                     infill={infill}
                     density={selectedMaterial.value}
                     selectedMaterialName={selectedMaterial.name}
+                    selectedColor={selectedColor}
                   />
                 )}
                 <OrbitControls
@@ -379,12 +404,12 @@ const ModelViewer3: React.FC<ModelViewerProps> = ({ file }) => {
                 </div>
               )}
             </div>
-          </div>
+          </div> */}
 
-          <div className="hidden lg:block border-l border-gray-300" />
-          <div>
-            {/* Infill Accordion */}
-            <div className=" w-full lg:w-1/3 p-4 flex flex-col">
+      {/* <div className="hidden lg:block border-l border-gray-300" /> */}
+      <div>
+        {/* Infill Accordion */}
+        {/* <div className=" w-full lg:w-1/3 p-4 flex flex-col">
               <button
                 className="w-fit text-left font-semibold text-gray-800 bg-white p-4"
                 onClick={() => setShowInfillOptions((prev) => !prev)}
@@ -424,9 +449,9 @@ const ModelViewer3: React.FC<ModelViewerProps> = ({ file }) => {
                   );
                 })}
               </div>
-            </div>
+            </div> */}
 
-            <div className="w-full lg:w-1/3 p-4 flex flex-col">
+        {/* <div className="w-full lg:w-1/3 p-4 flex flex-col">
               <button
                 className="w-fit text-left font-semibold text-gray-800 bg-white p-4"
                 onClick={() => setShowMaterialOptions((prev) => !prev)}
@@ -464,6 +489,285 @@ const ModelViewer3: React.FC<ModelViewerProps> = ({ file }) => {
                   </div>
                 ))}
               </div>
+            </div> */}
+
+        {/* <div className=" lg:w-1/3 p-4 flex flex-col">
+              <button
+                className="w-fit text-left font-semibold text-gray-800 bg-white p-4"
+                onClick={() => setShowColorOptions((prev) => !prev)}
+              >
+                Color: {selectedColor} ▼
+              </button>
+
+              <div
+                className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                  showColorOptions
+                    ? "max-h-80 opacity-100 bg-white w-32 p-2"
+                    : "max-h-0 opacity-0"
+                }`}
+              >
+                {colorOptions.map((color) => (
+                  <label
+                    key={color.value}
+                    className="inline-flex items-center space-x-2 cursor-pointer"
+                  >
+                    <input
+                      type="radio"
+                      name="color"
+                      checked={selectedColor === color.value}
+                      onChange={() => {
+                        setSelectedColor(color.value);
+                        setAnalysisProgress(0);
+                        setMetrics(null);
+                        setShowColorOptions(false);
+                      }}
+                    />
+                    <span
+                      className="inline-block w-4 h-4 rounded-full"
+                      style={{ backgroundColor: color.value }}
+                    />
+                    <span className="text-sm text-gray-800">{color.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div> */}
+        {/* </div> */}
+      </div>
+      {/* </section> */}
+
+      <section className="w-full min-h-screen px-4 py-8 bg-gray-100 flex flex-col items-center justify-center gap-6">
+        <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-[2fr_1px_1fr] gap-6">
+          {/* Left Column: Model viewer + metrics */}
+          <div className="flex flex-col gap-6">
+            <div className="w-full h-[400px] sm:h-[500px] bg-white rounded-xl shadow">
+              <Canvas camera={{ position: [100, 100, 100], fov: 45 }}>
+                <ambientLight intensity={1.2} />
+                <directionalLight position={[1, 2, 3]} intensity={1.2} />
+                <primitive object={new THREE.GridHelper(400, 25)} />
+                <primitive object={new THREE.AxesHelper(100)} />
+                {file && (
+                  <Model
+                    file={file}
+                    onMetricsReady={setMetrics}
+                    setAnalysisProgress={setAnalysisProgress}
+                    modelRef={modelRef}
+                    infill={infill}
+                    density={selectedMaterial.value}
+                    selectedMaterialName={selectedMaterial.name}
+                    selectedColor={selectedColor}
+                  />
+                )}
+                <OrbitControls
+                  autoRotate
+                  autoRotateSpeed={1.2}
+                  enableZoom
+                  enablePan
+                  enableRotate
+                />
+              </Canvas>
+            </div>
+
+            <div className="rounded-xl overflow-hidden bg-black text-gray-100 text-sm shadow p-4">
+              {file && (
+                <h2 className="text-lg text-white font-semibold mb-2">
+                  File: {file.name}
+                </h2>
+              )}
+
+              {analysisProgress < 100 ? (
+                <>
+                  <div className="w-full bg-gray-700 h-2 rounded">
+                    <div
+                      className="bg-green-500 h-full rounded"
+                      style={{ width: `${analysisProgress}%` }}
+                    />
+                  </div>
+                  <p className="mt-2">Analyzing... {analysisProgress}%</p>
+                </>
+              ) : metrics ? (
+                <ul className="space-y-2">
+                  <li>
+                    <strong>Volume:</strong> {metrics.volume}
+                  </li>
+                  <li>
+                    <strong>Dimensions:</strong> {metrics.dimensions}
+                  </li>
+                  <li>
+                    <strong>Weight:</strong> {metrics.weight}
+                  </li>
+                  <li>
+                    <strong>Print Time:</strong> {metrics.printTime}
+                  </li>
+                  <li>
+                    <strong>Total Cost (Incl. GST):</strong>{" "}
+                    {metrics.totalCostWithGst}
+                  </li>
+                </ul>
+              ) : null}
+
+              {analysisProgress === 100 && (
+                <div className="mt-4 text-xs text-gray-400">
+                  <p>
+                    GST at the rate of <strong>18%</strong> is included in the
+                    total cost.
+                  </p>
+                  <p>
+                    Taxes and additional charges may apply based on the region.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="hidden lg:block w-px bg-gray-300" />
+
+          {/* Right Column: Options */}
+          <div className="flex flex-col gap-4">
+            {/* Infill Options */}
+            <div className="bg-white rounded-xl shadow p-4">
+              <button
+                className="w-full text-left font-semibold text-gray-800"
+                onClick={() => setShowInfillOptions((prev) => !prev)}
+              >
+                Infill ▼
+              </button>
+              <div
+                className={`transition-all duration-300 ease-in-out ${
+                  showInfillOptions
+                    ? "max-h-80 opacity-100 mt-2"
+                    : "max-h-0 opacity-0 overflow-hidden"
+                }`}
+              >
+                {[...Array(10)].map((_, i) => {
+                  const percent = (i + 1) * 10;
+                  return (
+                    <div key={percent}>
+                      <label className="inline-flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          checked={Math.round(infill * 100) === percent}
+                          onChange={() => {
+                            setInfill(percent / 100);
+                            setAnalysisProgress(0);
+                            setMetrics(null);
+                            setShowInfillOptions(false);
+                          }}
+                          className="form-checkbox text-blue-600"
+                        />
+                        <span className="text-sm text-gray-800">
+                          {percent}%
+                        </span>
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Material Options */}
+            <div className="bg-white rounded-xl shadow p-4">
+              <button
+                className="w-full text-left font-semibold text-gray-800"
+                onClick={() => setShowMaterialOptions((prev) => !prev)}
+              >
+                Material: {selectedMaterial.name} ▼
+              </button>
+              <div
+                className={`transition-all duration-300 ease-in-out ${
+                  showMaterialOptions
+                    ? "max-h-80 opacity-100 mt-2"
+                    : "max-h-0 opacity-0 overflow-hidden"
+                }`}
+              >
+                {materialOptions.map((material) => (
+                  <div key={material.name}>
+                    <label className="inline-flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="material"
+                        checked={selectedMaterial.name === material.name}
+                        onChange={() => {
+                          setSelectedMaterial(material);
+                          setAnalysisProgress(0);
+                          setMetrics(null);
+                          setShowMaterialOptions(false);
+                        }}
+                        className="form-radio text-blue-600"
+                      />
+                      <span className="text-sm text-gray-800">
+                        {material.name}
+                      </span>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Color Options */}
+            <div className="bg-white rounded-xl shadow p-4">
+              <button
+                className="w-full text-left font-semibold text-gray-800"
+                onClick={() => setShowColorOptions((prev) => !prev)}
+              >
+                Color: {selectedColor} ▼
+              </button>
+
+              <div
+                className={`transition-all duration-300 ease-in-out ${
+                  showColorOptions
+                    ? "max-h-80 opacity-100 mt-2"
+                    : "max-h-0 opacity-0 overflow-hidden"
+                } flex flex-col space-y-2`}
+              >
+                {colorOptions.map((color) => (
+                  <div key={color.value}>
+                    <label className="inline-flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="color"
+                        checked={selectedColor === color.value}
+                        onChange={() => {
+                          setSelectedColor(color.value);
+                          setAnalysisProgress(0);
+                          setMetrics(null);
+                          setShowColorOptions(false);
+                        }}
+                      />
+                      <span
+                        className="inline-block w-4 h-4 rounded-full"
+                        style={{ backgroundColor: color.value }}
+                      />
+                      <span className="text-sm text-gray-800">
+                        {color.name}
+                      </span>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="button"
+                className="rounded-full bg-neutral-800 px-7 py-3 text-basex font-medium text-neutral-50"
+              >
+                Add To Cart
+              </button>
+            </div>
+            <div>
+              <a
+                href="https://mail.google.com/mail/?view=cm&fs=1&to=info.arnobot@gmail.com&su=Hello&body=Hi%20there%2C%20I%20wanted%20to%20reach%20out%20to%20you."
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <button
+                  type="button"
+                  className="rounded-full bg-red-600 px-7 py-3 text-base font-medium text-white hover:bg-red-700"
+                >
+                  Contact Me on Gmail
+                </button>
+              </a>
             </div>
           </div>
         </div>

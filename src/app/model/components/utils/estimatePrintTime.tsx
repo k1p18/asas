@@ -36,7 +36,7 @@ export const estimatePrintTime = (
   const layerHeight = 0.2;
   const printSpeed = 50;
   const perimeterSpeed = 20;
-  const travelSpeed = 100;
+  const travelSpeed = 25;
   // const infill = 0.2;
   const layerChangeTime = 1.0;
 
