@@ -9,6 +9,9 @@ import { loadModel } from "./utils/loadAndPrepareModel";
 import { calculateVolume } from "./utils/calculateVolume";
 import { estimatePrintTime, formatTime } from "./utils/estimatePrintTime";
 import { estimateWeight } from "./utils/estimateWeight";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useCart } from "@/app/context/CartContext";
 
 interface ModelViewerProps {
   file: File | null;
@@ -190,356 +193,45 @@ const ModelViewer3: React.FC<ModelViewerProps> = ({ file }) => {
   const [selectedColor, setSelectedColor] = useState("purple");
   const [showColorOptions, setShowColorOptions] = useState(false);
   const modelRef = useRef<THREE.Object3D | null>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+
+  const router = useRouter();
+  const { addToCart } = useCart();
+
+  const handleToCart = () => {
+    if (!file || !metrics || analysisProgress < 100) return;
+
+    const canvasElement = canvasRef.current?.querySelector(
+      "canvas"
+    ) as HTMLCanvasElement | null;
+    const image =
+      canvasElement?.toDataURL("image/png") || "/fallback-image.png";
+
+    addToCart({
+      name: file.name,
+      image,
+      material: selectedMaterial.name,
+      color: selectedColor,
+      printTime: metrics.printTime,
+      weight: metrics.weight,
+      dimensions: metrics.dimensions,
+      infill,
+      totalCost: parseFloat(metrics.totalCostWithGst.replace("₹", "")),
+      quantity: 1,
+    });
+    router.push("/cart");
+  };
 
   return (
-    // <section className="w-full min-h-screen px-4 py-8 bg-gray-100 flex flex-col items-center justify-center gap-6">
-    //   <div className="w-full max-w-3xl">
-    //     <div className="w-full h-[500px] bg-white rounded-xl shadow">
-    //       <Canvas camera={{ position: [100, 100, 100], fov: 45 }}>
-    //         <ambientLight intensity={1.2} />
-    //         <directionalLight position={[1, 2, 3]} intensity={1.2} />
-    //         {/* <primitive object={new THREE.GridHelper(400, 25)} /> */}
-    //         <primitive
-    //           object={new THREE.GridHelper(400, 25)}
-    //           position={[0, 0, 0]}
-    //         />
-
-    //         <primitive object={new THREE.AxesHelper(100)} />
-
-    //         {file && (
-    //           <Model
-    //             file={file}
-    //             onMetricsReady={setMetrics}
-    //             setAnalysisProgress={setAnalysisProgress}
-    //             modelRef={modelRef}
-    //             infill={infill}
-    //           />
-    //         )}
-    //         {/* <OrbitControls enablePan enableZoom enableRotate /> */}
-
-    //         <OrbitControls
-    //           autoRotate
-    //           autoRotateSpeed={1.2}
-    //           enableZoom
-    //           enablePan
-    //           enableRotate
-    //         />
-    //       </Canvas>
-    //     </div>
-    //   </div>
-
-    //   <div className="w-full max-w-3xl rounded-xl overflow-hidden bg-black text-gray-100 text-sm shadow">
-    //     <div className="p-4">
-    //       {file && (
-    //         <h2 className="text-lg text-black font-semibold mb-2">
-    //           File: {file.name}
-    //         </h2>
-    //       )}
-
-    //       {analysisProgress < 100 ? (
-    //         <>
-    //           <div className="w-full bg-gray-700 h-2 rounded">
-    //             <div
-    //               className="bg-green-500 h-full rounded"
-    //               style={{ width: `${analysisProgress}%` }}
-    //             />
-    //           </div>
-    //           <p className="mt-2">Analyzing... {analysisProgress}%</p>
-    //         </>
-    //       ) : metrics ? (
-    //         <ul className="space-y-2">
-    //           <li>
-    //             <strong>Volume:</strong> {metrics.volume}
-    //           </li>
-    //           <li>
-    //             <strong>Dimensions:</strong> {metrics.dimensions}
-    //           </li>
-    //           <li>
-    //             <strong>Print Time:</strong> {metrics.printTime}
-    //           </li>
-    //           <li>
-    //             <strong>Total Cost (Incl. GST):</strong>{" "}
-    //             {metrics.totalCostWithGst}
-    //           </li>
-    //         </ul>
-    //       ) : null}
-
-    //       {analysisProgress === 100 && (
-    //         <div className="mt-4 text-xs text-gray-400">
-    //           <p>
-    //             GST at the rate of <strong>18%</strong> is included in the total
-    //             cost.
-    //           </p>
-    //           <p>Taxes and additional charges may apply based on the region.</p>
-    //         </div>
-    //       )}
-    //     </div>
-    //   </div>
-
-    //   <div className="w-full max-w-5xl flex flex-col lg:flex-row gap-6">
-    //     {/* Infill Accordion */}
-    //     <div className="bg-white shadow rounded-xl w-full lg:w-1/3 p-4">
-    //       <div className="mb-4">
-    //         <button
-    //           className="w-full text-left font-semibold text-gray-800"
-    //           onClick={() => setShowInfillOptions((prev) => !prev)}
-    //         >
-    //           Infill ▼
-    //         </button>
-    //         {showInfillOptions && (
-    //           <div className="mt-3 space-y-2">
-    //             {[...Array(10)].map((_, i) => {
-    //               const percent = (i + 1) * 10;
-    //               return (
-    //                 <div key={percent}>
-    //                   <label className="inline-flex items-center space-x-2 cursor-pointer">
-    //                     <input
-    //                       type="checkbox"
-    //                       checked={Math.round(infill * 100) === percent}
-    //                       onChange={() => {
-    //                         setInfill(percent / 100);
-    //                         setAnalysisProgress(0); // trigger reanalysis
-    //                         setMetrics(null);
-    //                         setShowInfillOptions(false);
-    //                       }}
-    //                       className="form-checkbox text-blue-600"
-    //                     />
-    //                     <span className="text-sm text-gray-800">
-    //                       {percent}%
-    //                     </span>
-    //                   </label>
-    //                 </div>
-    //               );
-    //             })}
-    //           </div>
-    //         )}
-    //       </div>
-    //     </div>
-    //   </div>
-    // </section>
-
     <>
-      {/* <section className="w-full min-h-screen px-4 py-8 bg-gray-100 flex flex-col items-center justify-center gap-6">
-        {/* <div className="w-full max-w-5xl flex flex-col lg:flex-row gap-6"> */}
-      {/* Main content: Model viewer + metrics */}
-      {/* <div className="flex-1 flex flex-col gap-6">
-            <div className="w-full h-[500px] bg-white rounded-xl shadow">
-              <Canvas camera={{ position: [100, 100, 100], fov: 45 }}>
-                <ambientLight intensity={1.2} />
-                <directionalLight position={[1, 2, 3]} intensity={1.2} />
-                <primitive
-                  object={new THREE.GridHelper(400, 25)}
-                  position={[0, 0, 0]}
-                />
-                <primitive object={new THREE.AxesHelper(100)} />
-                {file && (
-                  <Model
-                    file={file}
-                    onMetricsReady={setMetrics}
-                    setAnalysisProgress={setAnalysisProgress}
-                    modelRef={modelRef}
-                    infill={infill}
-                    density={selectedMaterial.value}
-                    selectedMaterialName={selectedMaterial.name}
-                    selectedColor={selectedColor}
-                  />
-                )}
-                <OrbitControls
-                  autoRotate
-                  autoRotateSpeed={1.2}
-                  enableZoom
-                  enablePan
-                  enableRotate
-                />
-              </Canvas>
-            </div>
-
-            <div className="rounded-xl overflow-hidden bg-black text-gray-100 text-sm shadow p-4">
-              {file && (
-                <h2 className="text-lg text-black font-semibold mb-2">
-                  File: {file.name}
-                </h2>
-              )}
-
-              {analysisProgress < 100 ? (
-                <>
-                  <div className="w-full bg-gray-700 h-2 rounded">
-                    <div
-                      className="bg-green-500 h-full rounded"
-                      style={{ width: `${analysisProgress}%` }}
-                    />
-                  </div>
-                  <p className="mt-2">Analyzing... {analysisProgress}%</p>
-                </>
-              ) : metrics ? (
-                <ul className="space-y-2">
-                  <li>
-                    <strong>Volume:</strong> {metrics.volume}
-                  </li>
-                  <li>
-                    <strong>Dimensions:</strong> {metrics.dimensions}
-                  </li>
-                  <li>
-                    <strong>Weight:</strong> {metrics.weight}
-                  </li>
-                  <li>
-                    <strong>Print Time:</strong> {metrics.printTime}
-                  </li>
-                  <li>
-                    <strong>Total Cost (Incl. GST):</strong>{" "}
-                    {metrics.totalCostWithGst}
-                  </li>
-                </ul>
-              ) : null}
-
-              {analysisProgress === 100 && (
-                <div className="mt-4 text-xs text-gray-400">
-                  <p>
-                    GST at the rate of <strong>18%</strong> is included in the
-                    total cost.
-                  </p>
-                  <p>
-                    Taxes and additional charges may apply based on the region.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div> */}
-
-      {/* <div className="hidden lg:block border-l border-gray-300" /> */}
-      <div>
-        {/* Infill Accordion */}
-        {/* <div className=" w-full lg:w-1/3 p-4 flex flex-col">
-              <button
-                className="w-fit text-left font-semibold text-gray-800 bg-white p-4"
-                onClick={() => setShowInfillOptions((prev) => !prev)}
-              >
-                Infill ▼
-              </button>
-
-              <div
-                className={`overflow-hidden transition-all duration-300 ease-in-out
-      ${
-        showInfillOptions
-          ? "max-h-80 opacity-100  bg-white w-20 it p-2"
-          : "max-h-0 opacity-0 mt-0"
-      }`}
-              >
-                {[...Array(10)].map((_, i) => {
-                  const percent = (i + 1) * 10;
-                  return (
-                    <div key={percent}>
-                      <label className="inline-flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={Math.round(infill * 100) === percent}
-                          onChange={() => {
-                            setInfill(percent / 100);
-                            setAnalysisProgress(0);
-                            setMetrics(null);
-                            setShowInfillOptions(false);
-                          }}
-                          className="form-checkbox text-blue-600"
-                        />
-                        <span className="text-sm text-gray-800">
-                          {percent}%
-                        </span>
-                      </label>
-                    </div>
-                  );
-                })}
-              </div>
-            </div> */}
-
-        {/* <div className="w-full lg:w-1/3 p-4 flex flex-col">
-              <button
-                className="w-fit text-left font-semibold text-gray-800 bg-white p-4"
-                onClick={() => setShowMaterialOptions((prev) => !prev)}
-              >
-                Material: {selectedMaterial.name} ▼
-              </button>
-
-              <div
-                className={`overflow-hidden transition-all duration-300 ease-in-out
-      ${
-        showMaterialOptions
-          ? "max-h-80 opacity-100 bg-white w-32 p-2"
-          : "max-h-0 opacity-0"
-      }`}
-              >
-                {materialOptions.map((material) => (
-                  <div key={material.name}>
-                    <label className="inline-flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="material"
-                        checked={selectedMaterial.name === material.name}
-                        onChange={() => {
-                          setSelectedMaterial(material);
-                          setAnalysisProgress(0);
-                          setMetrics(null);
-                          setShowMaterialOptions(false);
-                        }}
-                        className="form-checkbox text-blue-600"
-                      />
-                      <span className="text-sm text-gray-800">
-                        {material.name}
-                      </span>
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div> */}
-
-        {/* <div className=" lg:w-1/3 p-4 flex flex-col">
-              <button
-                className="w-fit text-left font-semibold text-gray-800 bg-white p-4"
-                onClick={() => setShowColorOptions((prev) => !prev)}
-              >
-                Color: {selectedColor} ▼
-              </button>
-
-              <div
-                className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                  showColorOptions
-                    ? "max-h-80 opacity-100 bg-white w-32 p-2"
-                    : "max-h-0 opacity-0"
-                }`}
-              >
-                {colorOptions.map((color) => (
-                  <label
-                    key={color.value}
-                    className="inline-flex items-center space-x-2 cursor-pointer"
-                  >
-                    <input
-                      type="radio"
-                      name="color"
-                      checked={selectedColor === color.value}
-                      onChange={() => {
-                        setSelectedColor(color.value);
-                        setAnalysisProgress(0);
-                        setMetrics(null);
-                        setShowColorOptions(false);
-                      }}
-                    />
-                    <span
-                      className="inline-block w-4 h-4 rounded-full"
-                      style={{ backgroundColor: color.value }}
-                    />
-                    <span className="text-sm text-gray-800">{color.name}</span>
-                  </label>
-                ))}
-              </div>
-            </div> */}
-        {/* </div> */}
-      </div>
-      {/* </section> */}
-
       <section className="w-full min-h-screen px-4 py-8 bg-gray-100 flex flex-col items-center justify-center gap-6">
         <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-[2fr_1px_1fr] gap-6">
           {/* Left Column: Model viewer + metrics */}
           <div className="flex flex-col gap-6">
-            <div className="w-full h-[400px] sm:h-[500px] bg-white rounded-xl shadow">
+            <div
+              className="w-full h-[400px] sm:h-[500px] bg-white rounded-xl shadow"
+              ref={canvasRef}
+            >
               <Canvas camera={{ position: [100, 100, 100], fov: 45 }}>
                 <ambientLight intensity={1.2} />
                 <directionalLight position={[1, 2, 3]} intensity={1.2} />
@@ -747,10 +439,24 @@ const ModelViewer3: React.FC<ModelViewerProps> = ({ file }) => {
               </div>
             </div>
 
-            <div>
+            {/* <div>
               <button
                 type="button"
+                onClick={handleCart}
                 className="rounded-full bg-neutral-800 px-7 py-3 text-basex font-medium text-neutral-50"
+              >
+                Add To Cart
+              </button>
+            </div> */}
+            <div className="mb-2 mt-4">
+              <button
+                onClick={handleToCart}
+                disabled={analysisProgress < 100 || !metrics}
+                className={`rounded-full px-7 py-3 text-base font-medium text-neutral-50 ${
+                  analysisProgress < 100 || !metrics
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-neutral-800"
+                }`}
               >
                 Add To Cart
               </button>

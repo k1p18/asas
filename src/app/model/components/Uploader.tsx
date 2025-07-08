@@ -4,6 +4,8 @@ import React, { useRef, useState } from "react";
 import ModelViewer from "./ModelViewer";
 import ModelViewer1 from "./ModelViewer1";
 import ModelViewer3 from "./ModelViewer3";
+import ModelViewer33 from "./ModelViewer33";
+import ModelViewer333 from "./ModelViewer333";
 
 const Uploader = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -29,13 +31,45 @@ const Uploader = () => {
     console.log("Div clicked, opening file picker");
   };
 
-  const handleUploadClick = () => {
-    if (selectedFile) {
+  // const handleUploadClick = () => {
+  //   if (selectedFile) {
+  //     setIsUploaded(true);
+  //     console.log(
+  //       "Upload button clicked, showing ModelViewer for:",
+  //       selectedFile.name
+  //     );
+  //   }
+  // };
+
+  const handleUploadClick = async () => {
+    if (!selectedFile) return;
+
+    const accessToken = localStorage.getItem("access"); 
+
+    const formData = new FormData();
+    formData.append("name", selectedFile.name);
+    formData.append("file", selectedFile);
+    formData.append("infill", "20");
+    formData.append("material", "PLA");
+    formData.append("color", "White");
+
+    try {
+      const response = await fetch("http://localhost:8000/api/upload-model/", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`, 
+       
+        },
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error("Upload failed");
+      const result = await response.json();
+      console.log("Upload successful:", result);
+
       setIsUploaded(true);
-      console.log(
-        "Upload button clicked, showing ModelViewer for:",
-        selectedFile.name
-      );
+    } catch (error) {
+      console.error("Upload error:", error);
     }
   };
 
@@ -44,7 +78,7 @@ const Uploader = () => {
       {isUploaded && selectedFile ? (
         // <ModelViewer file={selectedFile} />
         // <ModelViewer1 file={selectedFile} />
-        <ModelViewer3 file={selectedFile} />
+        <ModelViewer33 file={selectedFile} />
       ) : (
         <div className="bg-white p-8 rounded-xl shadow-xl max-w-md w-full">
           <h2 className="text-2xl font-semibold text-gray-800 text-center mb-6">

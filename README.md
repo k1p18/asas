@@ -250,3 +250,13 @@ else if (ext === "obj") {
 };
 
 
+app
+    model 
+        component
+            cart
+                page.tsx
+            uyils
+            cart.tsx
+            Modelvier.tsx
+            uploader.tsx
+    page.tsx

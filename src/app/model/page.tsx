@@ -1,11 +1,12 @@
 import React from 'react'
-import Uploader from './components/Uploader'
+import UploaderPage from '../uploader/page'
+
 
 const Modelpage = () => {
   return (
     <>
     
-    <Uploader/>
+    <UploaderPage/>
     </>
   )
 }
