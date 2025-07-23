@@ -5,8 +5,7 @@ import Order from "../model/components/Order";
 const LoginPage = () => {
   return (
     <>
-      {/* <Loginr /> */}
-      {/* <Order/> */}
+
     </>
   );
 };

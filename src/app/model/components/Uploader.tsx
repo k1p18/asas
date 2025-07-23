@@ -31,47 +31,48 @@ const Uploader = () => {
     console.log("Div clicked, opening file picker");
   };
 
-  // const handleUploadClick = () => {
-  //   if (selectedFile) {
-  //     setIsUploaded(true);
-  //     console.log(
-  //       "Upload button clicked, showing ModelViewer for:",
-  //       selectedFile.name
-  //     );
-  //   }
-  // };
-
-  const handleUploadClick = async () => {
-    if (!selectedFile) return;
-
-    const accessToken = localStorage.getItem("access"); 
-
-    const formData = new FormData();
-    formData.append("name", selectedFile.name);
-    formData.append("file", selectedFile);
-    formData.append("infill", "20");
-    formData.append("material", "PLA");
-    formData.append("color", "White");
-
-    try {
-      const response = await fetch("http://localhost:8000/api/upload-model/", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`, 
-       
-        },
-        body: formData,
-      });
-
-      if (!response.ok) throw new Error("Upload failed");
-      const result = await response.json();
-      console.log("Upload successful:", result);
-
+  const handleUploadClick = () => {
+    if (selectedFile) {
       setIsUploaded(true);
-    } catch (error) {
-      console.error("Upload error:", error);
+      console.log(
+        "Upload button clicked, showing ModelViewer for:",
+        selectedFile.name
+      );
     }
   };
+
+  
+  // const handleUploadClick = async () => {
+  //   if (!selectedFile) return;
+
+  //   const accessToken = localStorage.getItem("access"); 
+
+  //   const formData = new FormData();
+  //   formData.append("name", selectedFile.name);
+  //   formData.append("file", selectedFile);
+  //   formData.append("infill", "20");
+  //   formData.append("material", "PLA");
+  //   formData.append("color", "White");
+
+  //   try {
+  //     const response = await fetch("http://localhost:8000/api/upload-model/", {
+  //       method: "POST",
+  //       headers: {
+  //         Authorization: `Bearer ${accessToken}`, 
+       
+  //       },
+  //       body: formData,
+  //     });
+
+  //     if (!response.ok) throw new Error("Upload failed");
+  //     const result = await response.json();
+  //     console.log("Upload successful:", result);
+
+  //     setIsUploaded(true);
+  //   } catch (error) {
+  //     console.error("Upload error:", error);
+  //   }
+  // };
 
   return (
     <section className="bg-black flex items-center justify-center min-h-screen">
@@ -136,7 +137,7 @@ const Uploader = () => {
           </div>
           <button
             id="upload-btn"
-            className="w-full mt-6 py-2 px-4 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-all duration-300 disabled:opacity-50"
+            className="cursor-pointer w-full mt-6 py-2 px-4 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-all duration-300 disabled:opacity-50"
             disabled={fileName === "No file selected"}
             onClick={handleUploadClick}
           >
